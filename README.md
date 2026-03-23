@@ -161,6 +161,8 @@ npm run ch5:bedrock
 - エージェントが `searchTopic` / `getCurrentDate` ツールを自律的に呼び出す
 - Chapter 1（ツールなし）と比べて、事実に基づいた記事が生成される
 
+**お題**: TypeScriptの最新動向
+
 ```typescript
 // ツールを定義して Agent に渡すだけ
 const agent = new Agent({
@@ -186,6 +188,8 @@ npm run ch6:bedrock
 - Zod スキーマで出力の型を定義し、型付きオブジェクトとして受け取る
 - `article.title`, `article.sections[0].heading` のようにプログラムでアクセスできる
 - JSON シリアライズ可能 → DB保存、API返却等の後続処理に使える
+
+**お題**: TypeScriptの型システムを活用したバグ防止テクニック
 
 ```typescript
 const result = await agent.generate(messages, {
@@ -216,6 +220,8 @@ npm run ch7:bedrock
 - Supervisor エージェントが researcher / writer サブエージェントにタスクを委譲
 - `network()` メソッドでストリーム実行し、エージェント間の協調を観察
 - Chapter 2（コードで順序制御）と比べて、LLM が自律的にタスクを振り分ける違い
+
+**お題**: TypeScriptの型ガードとNarrowing
 
 ```typescript
 const supervisor = new Agent({
