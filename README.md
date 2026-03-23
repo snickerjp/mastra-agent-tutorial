@@ -223,7 +223,7 @@ npm run ch7:bedrock
 
 **何を体験するか**
 - Supervisor エージェントが researcher / writer サブエージェントにタスクを委譲
-- `network()` メソッドでストリーム実行し、エージェント間の協調を観察
+- `stream()` メソッドでストリーム実行し、エージェント間の協調を観察
 - Chapter 2（コードで順序制御）と比べて、LLM が自律的にタスクを振り分ける違い
 
 **お題**: TypeScriptの型ガードとNarrowing
@@ -234,7 +234,11 @@ const supervisor = new Agent({
   instructions: "researcher にリサーチさせ、writer に執筆させてください",
   // ...
 });
-const stream = await supervisor.network(messages, { maxSteps: 10 });
+const stream = await supervisor.stream(messages, { maxSteps: 10 });
+
+for await (const chunk of stream.textStream) {
+  process.stdout.write(chunk);
+}
 ```
 
 ---

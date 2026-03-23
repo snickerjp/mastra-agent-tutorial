@@ -50,10 +50,16 @@ async function main() {
   console.log(`\nトピック: "${TOPIC}"`);
   console.log("\n📌 出力が型付きオブジェクトとして返ってくることを確認してください\n");
 
+  // Bedrock (Nova) は response_format をサポートしないため jsonPromptInjection が必要
+  const isBedrock = (process.env.AI_PROVIDER || "openai") === "bedrock";
+
   const result = await blogAgent.generate(
     [{ role: "user", content: TOPIC }],
     {
-      structuredOutput: { schema: BlogArticleSchema },
+      structuredOutput: {
+        schema: BlogArticleSchema,
+        ...(isBedrock && { jsonPromptInjection: true }),
+      },
     }
   );
 

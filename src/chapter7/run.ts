@@ -2,7 +2,7 @@
  * Chapter 7: マルチエージェント（Supervisor パターン）
  *
  * Supervisor エージェントが researcher / writer サブエージェントにタスクを委譲し、
- * 協調して記事を完成させる。network() メソッドでストリーム実行する。
+ * 協調して記事を完成させる。stream() メソッドでストリーム実行する。
  *
  * 実行コマンド:
  *   npm run ch7
@@ -13,11 +13,12 @@ import "dotenv/config";
 import { Agent } from "@mastra/core/agent";
 import { getModel } from "../config/models.js";
 
-// --- サブエージェント ---
+// --- サブエージェント（description が必須：Supervisor が委譲先を判断する材料になる） ---
 
 const researcher = new Agent({
   id: "researcher",
   name: "researcher",
+  description: "トピックのリサーチを担当。主要ポイント・最新動向・具体例をまとめて返す。",
   instructions: `あなたはリサーチ専門のアシスタントです。
 与えられたトピックについて、以下を調査してまとめてください:
 - 主要なポイント（3〜5個）
@@ -30,6 +31,7 @@ const researcher = new Agent({
 const writer = new Agent({
   id: "writer",
   name: "writer",
+  description: "リサーチ結果をもとに、読みやすい技術ブログ記事を執筆する。",
   instructions: `あなたはプロの技術ブログライターです。
 リサーチ結果をもとに、読みやすい技術ブログ記事を執筆してください:
 - 明確な見出し構成
@@ -68,40 +70,19 @@ async function main() {
   console.log("チーム: supervisor → researcher + writer");
   console.log("\n📌 Supervisor がサブエージェントに委譲する流れを観察してください\n");
 
-  const stream = await supervisor.network(
+  const stream = await supervisor.stream(
     [{ role: "user", content: `「${TOPIC}」について技術ブログ記事を書いてください` }],
     { maxSteps: 10 },
   );
 
-  let currentAgent = "";
-
-  for await (const chunk of stream) {
-    // サブエージェントの切り替わりを表示
-    if (chunk.type === "agent-execution-start") {
-      const agentId = chunk.payload.agentId;
-      if (agentId !== currentAgent) {
-        currentAgent = agentId;
-        console.log(`\n${"─".repeat(40)}`);
-        console.log(`🤖 ${agentId} が作業中...`);
-        console.log(`${"─".repeat(40)}\n`);
-      }
-    }
-
-    // テキスト出力をストリーム表示
-    if (chunk.type.endsWith("text-delta") && "payload" in chunk) {
-      const payload = chunk.payload as { text?: string };
-      if (payload.text) {
-        process.stdout.write(payload.text);
-      }
-    }
+  for await (const chunk of stream.textStream) {
+    process.stdout.write(chunk);
   }
 
-  const status = await stream.status;
   console.log(`\n\n${"=".repeat(60)}`);
-  console.log(`実行ステータス: ${status}`);
+  console.log("【観察ポイント】");
   console.log("=".repeat(60));
   console.log(`
-【観察ポイント】
 1. Supervisor が researcher → writer の順にタスクを委譲したか？
 2. researcher のリサーチ結果が writer の記事に反映されているか？
 3. 各エージェントの役割分担が明確か？
