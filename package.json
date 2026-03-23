@@ -14,7 +14,13 @@
     "ch3": "tsx src/chapter3/run.ts",
     "ch3:bedrock": "cross-env AI_PROVIDER=bedrock tsx src/chapter3/run.ts",
     "ch4": "tsx src/chapter4/run.ts",
-    "ch4:bedrock": "cross-env AI_PROVIDER=bedrock tsx src/chapter4/run.ts"
+    "ch4:bedrock": "cross-env AI_PROVIDER=bedrock tsx src/chapter4/run.ts",
+    "ch5": "tsx src/chapter5/run.ts",
+    "ch5:bedrock": "cross-env AI_PROVIDER=bedrock tsx src/chapter5/run.ts",
+    "ch6": "tsx src/chapter6/run.ts",
+    "ch6:bedrock": "cross-env AI_PROVIDER=bedrock tsx src/chapter6/run.ts",
+    "ch7": "tsx src/chapter7/run.ts",
+    "ch7:bedrock": "cross-env AI_PROVIDER=bedrock tsx src/chapter7/run.ts"
   },
   "keywords": [],
   "author": "",
