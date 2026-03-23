@@ -79,7 +79,10 @@ async function main() {
   for await (const chunk of stream.fullStream) {
     // デバッグ: 全チャンクタイプを表示
     if (chunk.type !== "text-delta") {
-      console.log(`\n[DEBUG chunk.type=${chunk.type}]`);
+      const info = chunk.type === "step-finish"
+        ? ` finishReason=${(chunk as any).payload?.finishReason ?? (chunk as any).finishReason} toolCalls=${JSON.stringify((chunk as any).payload?.toolCalls ?? (chunk as any).toolCalls ?? [])}`
+        : "";
+      console.log(`\n[DEBUG chunk.type=${chunk.type}${info}]`);
     }
     switch (chunk.type) {
       case "tool-call":
