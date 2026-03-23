@@ -8,7 +8,7 @@
 - プロンプトの品質がアウトプットに与える影響を**数値で比較**
 - **ツール**でエージェントに「行動」させる方法
 - **構造化出力**でプログラムから扱えるデータを得る方法
-- **マルチエージェント**で複数エージェントを協調させる方法
+- **MCP サーバー**で自作ツールを外部クライアントに公開する方法
 
 ---
 
@@ -42,7 +42,7 @@ graph LR
     C --> D[Chapter 4<br/>メモリで<br/>改善を重ねる]
     D --> E[Chapter 5<br/>ツールで<br/>行動する]
     E --> F[Chapter 6<br/>構造化<br/>出力]
-    F --> G[Chapter 7<br/>マルチ<br/>エージェント]
+    F --> G[Chapter 7<br/>MCP<br/>サーバー]
 ```
 
 ---
@@ -211,34 +211,32 @@ const article = BlogArticleSchema.parse(result.object);
 
 ---
 
-### Chapter 7: マルチエージェント（Supervisor パターン）
+### Chapter 7: MCP サーバーを作る
 
 ```bash
-# OpenAI版
 npm run ch7
-
-# Bedrock版
-npm run ch7:bedrock
 ```
 
-**何を体験するか**
-- Supervisor エージェントが researcher / writer サブエージェントにタスクを委譲
-- `stream()` メソッドでストリーム実行し、エージェント間の協調を観察
-- Chapter 2（コードで順序制御）と比べて、LLM が自律的にタスクを振り分ける違い
+※ MCP サーバーは LLM を使わないため、OpenAI/Bedrock の区別はありません。
 
-**お題**: TypeScriptの型ガードとNarrowing
+**何を体験するか**
+- Chapter 5 で作ったツールを MCP (Model Context Protocol) サーバーとして公開する
+- `MCPServer` + `startStdio()` で、Cursor / Windsurf / Claude Desktop 等から接続可能に
+- 「自分のツールを他のアプリに提供する」という MCP の基本を理解する
 
 ```typescript
-const supervisor = new Agent({
-  agents: { researcher, writer },
-  instructions: "researcher にリサーチさせ、writer に執筆させてください",
-  // ...
-});
-const stream = await supervisor.stream(messages, { maxSteps: 10 });
+import { MCPServer } from "@mastra/mcp";
+import { getCurrentDate, searchTopic } from "../chapter5/tools.js";
 
-for await (const chunk of stream.textStream) {
-  process.stdout.write(chunk);
-}
+const server = new MCPServer({
+  id: "blog-research-server",
+  name: "Blog Research MCP Server",
+  version: "1.0.0",
+  tools: { getCurrentDate, searchTopic },
+});
+
+server.startStdio();
+// → MCP クライアントから get-current-date / search-topic が呼べるようになる
 ```
 
 ---
@@ -311,4 +309,5 @@ researchStep → { keyPoints[], targetAudience, tone } → outlineStep
 | `@mastra/memory` | Memory クラス（Chapter 4で使用） |
 | `@mastra/libsql` | インメモリ SQLite ストレージ（Chapter 4で使用） |
 | `@mastra/core/evals` | createScorer など（Chapter 3で使用） |
+| `@mastra/mcp` | MCPServer（Chapter 7で使用） |
 | `zod` | スキーマ定義（全章で使用） |

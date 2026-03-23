@@ -19,8 +19,7 @@
     "ch5:bedrock": "cross-env AI_PROVIDER=bedrock tsx src/chapter5/run.ts",
     "ch6": "tsx src/chapter6/run.ts",
     "ch6:bedrock": "cross-env AI_PROVIDER=bedrock tsx src/chapter6/run.ts",
-    "ch7": "tsx src/chapter7/run.ts",
-    "ch7:bedrock": "cross-env AI_PROVIDER=bedrock tsx src/chapter7/run.ts"
+    "ch7": "tsx src/chapter7/server.ts"
   },
   "keywords": [],
   "author": "",
@@ -32,6 +31,7 @@
     "@mastra/core": "^1.15.0",
     "@mastra/evals": "^1.1.1",
     "@mastra/libsql": "^1.4.0",
+    "@mastra/mcp": "^1.3.1",
     "@mastra/memory": "^1.9.0",
     "ai": "^6.0.134",
     "dotenv": "^17.3.1",
