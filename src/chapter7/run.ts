@@ -70,33 +70,22 @@ async function main() {
   console.log("チーム: supervisor → researcher + writer");
   console.log("\n📌 Supervisor がサブエージェントに委譲する流れを観察してください\n");
 
-  const stream = await supervisor.stream(
+  const result = await supervisor.generate(
     [{ role: "user", content: `「${TOPIC}」について技術ブログ記事を書いてください` }],
     { maxSteps: 10 },
   );
 
-  // fullStream でサブエージェントへの委譲・テキスト出力を両方表示
-  for await (const chunk of stream.fullStream) {
-    // デバッグ: 全チャンクタイプを表示
-    if (chunk.type !== "text-delta") {
-      const info = chunk.type === "step-finish"
-        ? ` finishReason=${(chunk as any).payload?.finishReason ?? (chunk as any).finishReason} toolCalls=${JSON.stringify((chunk as any).payload?.toolCalls ?? (chunk as any).toolCalls ?? [])}`
-        : "";
-      console.log(`\n[DEBUG chunk.type=${chunk.type}${info}]`);
+  console.log("\n--- 生成結果 ---\n");
+  console.log(result.text);
+
+  // ツール呼び出し（サブエージェント委譲）の確認
+  if (result.toolResults && result.toolResults.length > 0) {
+    console.log("\n--- サブエージェント委譲ログ ---");
+    for (const tr of result.toolResults) {
+      console.log(`  🤖 ${tr.toolName}: ${String(tr.result).substring(0, 100)}...`);
     }
-    switch (chunk.type) {
-      case "tool-call":
-        console.log(`\n${"─".repeat(40)}`);
-        console.log(`🤖 → ${chunk.payload.toolName} に委譲中...`);
-        console.log(`${"─".repeat(40)}\n`);
-        break;
-      case "tool-result":
-        console.log(`\n✅ ${chunk.payload.toolName} が完了\n`);
-        break;
-      case "text-delta":
-        process.stdout.write(chunk.payload.text);
-        break;
-    }
+  } else {
+    console.log("\n⚠️  サブエージェントへの委譲は発生しませんでした");
   }
 
   console.log(`\n\n${"=".repeat(60)}`);
