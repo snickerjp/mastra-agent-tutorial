@@ -7,7 +7,7 @@
  * お題: Chapter 5 のブログリサーチツールを MCP サーバー化する
  *
  * ⚠️ stdio トランスポートは標準入出力を MCP 通信に使うため、
- *    console.log() を使うとプロトコルが壊れます。ログは stderr へ。
+ *    console.log() を使うとプロトコルが壊れます。
  */
 
 import { MCPServer } from "@mastra/mcp";
@@ -20,8 +20,6 @@ const server = new MCPServer({
   description: "ブログ記事のリサーチに使えるツールを提供する MCP サーバー",
   tools: { getCurrentDate, searchTopic },
 });
-
-console.error("Blog Research MCP Server を起動します（stdio）...");
 
 server.startStdio().catch((err) => {
   console.error("MCP サーバーの起動に失敗しました:", err);
