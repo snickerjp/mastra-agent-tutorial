@@ -192,16 +192,21 @@ npm run ch6:bedrock
 **お題**: TypeScriptの型システムを活用したバグ防止テクニック
 
 ```typescript
+// ブログ記事の出力構造を定義する Zod スキーマ
+const BlogArticleSchema = z.object({
+  title: z.string(),
+  sections: z.array(z.object({ heading: z.string(), body: z.string() })),
+  tags: z.array(z.string()),
+});
+
 const result = await agent.generate(messages, {
   structuredOutput: {
-    schema: z.object({
-      title: z.string(),
-      sections: z.array(z.object({ heading: z.string(), body: z.string() })),
-      tags: z.array(z.string()),
-    }),
+    schema: BlogArticleSchema,
   },
 });
-const article = result.object; // 型付きオブジェクト
+
+// スキーマで検証してから、型付きオブジェクトとして扱う
+const article = BlogArticleSchema.parse(result.object);
 ```
 
 ---
