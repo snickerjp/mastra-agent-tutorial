@@ -11,33 +11,22 @@
 
 ## セットアップ
 
-### OpenAI版（デフォルト）
+```bash
+npm install
+```
+
+### OpenAI版
 
 ```bash
-# パッケージをインストール
-npm install
-
-# 環境変数を設定
 cp .env.example .env
 # .env ファイルを開いて OPENAI_API_KEY を設定してください
 ```
 
-### AWS Bedrock版
+### AWS Bedrock版（SageMaker Studio等）
 
-```bash
-# パッケージをインストール（Bedrock用の依存関係も含まれています）
-npm install
+`.env` ファイルは不要です。IAM Roleで認証されます。
 
-# 環境変数を設定
-cp .env.example .env
-# .env ファイルを開いて AI_PROVIDER=bedrock に変更してください
-# AWS認証はIAM Roleまたは環境変数で設定します
-```
-
-**使用モデル**: Amazon Nova Lite
-- 入力: $0.06/1M tokens, 出力: $0.24/1M tokens
-- GPT-4o miniの約2/5のコスト
-- マルチモーダル対応（テキスト・画像・動画）
+**使用モデル**: Amazon Nova Lite（入力: $0.06/1M tokens, 出力: $0.24/1M tokens）
 
 ---
 
