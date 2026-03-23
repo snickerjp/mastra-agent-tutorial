@@ -1,0 +1,38 @@
+{
+  "name": "mastra-agent-tutorial",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "ch1": "tsx src/chapter1/run.ts",
+    "ch1:bedrock": "cross-env AI_PROVIDER=bedrock tsx src/chapter1/run.ts",
+    "ch2": "tsx src/chapter2/run.ts",
+    "ch2:bedrock": "cross-env AI_PROVIDER=bedrock tsx src/chapter2/run.ts",
+    "ch3": "tsx src/chapter3/run.ts",
+    "ch3:bedrock": "cross-env AI_PROVIDER=bedrock tsx src/chapter3/run.ts",
+    "ch4": "tsx src/chapter4/run.ts",
+    "ch4:bedrock": "cross-env AI_PROVIDER=bedrock tsx src/chapter4/run.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@ai-sdk/amazon-bedrock": "^4.0.67",
+    "@mastra/core": "^1.4.0",
+    "@mastra/evals": "^1.1.1",
+    "@mastra/libsql": "^1.4.0",
+    "@mastra/memory": "^1.3.0",
+    "dotenv": "^17.3.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "cross-env": "^7.0.3",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
