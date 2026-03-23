@@ -56,7 +56,7 @@ const supervisor = new Agent({
 1. まず researcher にトピックのリサーチを依頼してください
 2. リサーチ結果を受け取ったら、writer に記事の執筆を依頼してください
 3. 最終的な記事を出力してください`,
-  model: getModel(),
+  model: getModel({ pro: true }),
   agents: { researcher, writer },
 });
 
@@ -82,7 +82,8 @@ async function main() {
   if (result.toolResults && result.toolResults.length > 0) {
     console.log("\n--- サブエージェント委譲ログ ---");
     for (const tr of result.toolResults) {
-      console.log(`  🤖 ${tr.toolName}: ${String(tr.result).substring(0, 100)}...`);
+      const p = tr.payload ?? (tr as any);
+      console.log(`  🤖 ${p.toolName}: ${String(p.result).substring(0, 100)}...`);
     }
   } else {
     console.log("\n⚠️  サブエージェントへの委譲は発生しませんでした");
