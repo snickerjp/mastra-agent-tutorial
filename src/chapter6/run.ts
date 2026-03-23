@@ -57,7 +57,16 @@ async function main() {
     }
   );
 
-  const article = result.object as BlogArticle;
+  // LLM出力を Zod でランタイム検証してから扱う
+  const parsed = BlogArticleSchema.safeParse(result.object);
+  if (!parsed.success) {
+    console.error("❌ 構造化出力が BlogArticleSchema と一致しません:");
+    console.error(parsed.error.format());
+    throw new Error(
+      "構造化出力の検証に失敗しました。プロンプトや BlogArticleSchema を確認してください。"
+    );
+  }
+  const article = parsed.data;
 
   // 構造化データとして扱える
   console.log("--- 構造化データとして取得 ---\n");
