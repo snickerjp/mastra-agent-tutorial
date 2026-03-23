@@ -77,6 +77,10 @@ async function main() {
 
   // fullStream でサブエージェントへの委譲・テキスト出力を両方表示
   for await (const chunk of stream.fullStream) {
+    // デバッグ: 全チャンクタイプを表示
+    if (chunk.type !== "text-delta") {
+      console.log(`\n[DEBUG chunk.type=${chunk.type}]`);
+    }
     switch (chunk.type) {
       case "tool-call":
         console.log(`\n${"─".repeat(40)}`);
