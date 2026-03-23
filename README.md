@@ -6,6 +6,9 @@
 
 - エージェント開発で避けて通れない**タスク分割の難しさ**
 - プロンプトの品質がアウトプットに与える影響を**数値で比較**
+- **ツール**でエージェントに「行動」させる方法
+- **構造化出力**でプログラムから扱えるデータを得る方法
+- **マルチエージェント**で複数エージェントを協調させる方法
 
 ---
 
@@ -37,6 +40,9 @@ graph LR
     A[Chapter 1<br/>単純な<br/>1エージェント] --> B[Chapter 2<br/>タスクを<br/>分割する]
     B --> C[Chapter 3<br/>プロンプトの<br/>品質を測る]
     C --> D[Chapter 4<br/>メモリで<br/>改善を重ねる]
+    D --> E[Chapter 5<br/>ツールで<br/>行動する]
+    E --> F[Chapter 6<br/>構造化<br/>出力]
+    F --> G[Chapter 7<br/>マルチ<br/>エージェント]
 ```
 
 ---
@@ -140,6 +146,88 @@ await agent.generate("もっと初心者向けに書き直して", {
 
 ---
 
+### Chapter 5: ツールを使うエージェント
+
+```bash
+# OpenAI版
+npm run ch5
+
+# Bedrock版
+npm run ch5:bedrock
+```
+
+**何を体験するか**
+- `createTool` でエージェントが使える「アクション」を定義する
+- エージェントが `searchTopic` / `getCurrentDate` ツールを自律的に呼び出す
+- Chapter 1（ツールなし）と比べて、事実に基づいた記事が生成される
+
+```typescript
+// ツールを定義して Agent に渡すだけ
+const agent = new Agent({
+  tools: { getCurrentDate, searchTopic },
+  // ...
+});
+// → LLM が description と inputSchema を見て、いつ呼ぶかを自律的に判断
+```
+
+---
+
+### Chapter 6: 構造化出力（Structured Output）
+
+```bash
+# OpenAI版
+npm run ch6
+
+# Bedrock版
+npm run ch6:bedrock
+```
+
+**何を体験するか**
+- Zod スキーマで出力の型を定義し、型付きオブジェクトとして受け取る
+- `article.title`, `article.sections[0].heading` のようにプログラムでアクセスできる
+- JSON シリアライズ可能 → DB保存、API返却等の後続処理に使える
+
+```typescript
+const result = await agent.generate(messages, {
+  structuredOutput: {
+    schema: z.object({
+      title: z.string(),
+      sections: z.array(z.object({ heading: z.string(), body: z.string() })),
+      tags: z.array(z.string()),
+    }),
+  },
+});
+const article = result.object; // 型付きオブジェクト
+```
+
+---
+
+### Chapter 7: マルチエージェント（Supervisor パターン）
+
+```bash
+# OpenAI版
+npm run ch7
+
+# Bedrock版
+npm run ch7:bedrock
+```
+
+**何を体験するか**
+- Supervisor エージェントが researcher / writer サブエージェントにタスクを委譲
+- `network()` メソッドでストリーム実行し、エージェント間の協調を観察
+- Chapter 2（コードで順序制御）と比べて、LLM が自律的にタスクを振り分ける違い
+
+```typescript
+const supervisor = new Agent({
+  agents: { researcher, writer },
+  instructions: "researcher にリサーチさせ、writer に執筆させてください",
+  // ...
+});
+const stream = await supervisor.network(messages, { maxSteps: 10 });
+```
+
+---
+
 ## このチュートリアルで伝えたいこと
 
 ### タスク分割の本質的な難しさ
@@ -204,6 +292,7 @@ researchStep → { keyPoints[], targetAudience, tone } → outlineStep
 | パッケージ | 用途 |
 |---|---|
 | `@mastra/core` | Agent, createTool, createWorkflow, createStep, createScorer |
+| `@mastra/core/tools` | createTool（Chapter 5で使用） |
 | `@mastra/memory` | Memory クラス（Chapter 4で使用） |
 | `@mastra/libsql` | インメモリ SQLite ストレージ（Chapter 4で使用） |
 | `@mastra/core/evals` | createScorer など（Chapter 3で使用） |
