@@ -75,8 +75,21 @@ async function main() {
     { maxSteps: 10 },
   );
 
-  for await (const chunk of stream.textStream) {
-    process.stdout.write(chunk);
+  // fullStream でサブエージェントへの委譲・テキスト出力を両方表示
+  for await (const chunk of stream.fullStream) {
+    switch (chunk.type) {
+      case "tool-call":
+        console.log(`\n${"─".repeat(40)}`);
+        console.log(`🤖 → ${chunk.payload.toolName} に委譲中...`);
+        console.log(`${"─".repeat(40)}\n`);
+        break;
+      case "tool-result":
+        console.log(`\n✅ ${chunk.payload.toolName} が完了\n`);
+        break;
+      case "text-delta":
+        process.stdout.write(chunk.payload.text);
+        break;
+    }
   }
 
   console.log(`\n\n${"=".repeat(60)}`);
