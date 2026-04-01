@@ -116,6 +116,7 @@ export const searchTopicLive = createTool({
     try {
       const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1`;
       const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as {
         Heading?: string;
         AbstractText?: string;
@@ -133,14 +134,12 @@ export const searchTopicLive = createTool({
         });
       }
 
-      for (const topic of (data.RelatedTopics ?? []).slice(0, 3)) {
-        if (topic.Text) {
-          results.push({
-            title: topic.Text.slice(0, 80),
-            snippet: topic.Text,
-            source: topic.FirstURL ?? "",
-          });
-        }
+      for (const topic of (data.RelatedTopics ?? []).filter((t) => t.Text).slice(0, 3)) {
+        results.push({
+          title: topic.Text!.slice(0, 80),
+          snippet: topic.Text!,
+          source: topic.FirstURL ?? "",
+        });
       }
 
       if (results.length === 0) {
