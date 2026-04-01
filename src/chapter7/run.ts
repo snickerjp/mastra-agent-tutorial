@@ -39,14 +39,16 @@ try {
   // get-current-date を呼び出し
   console.log("--- getCurrentDate を実行 ---");
   const dateTool = tools["blogResearch_getCurrentDate"];
-  const dateResult = await dateTool!.execute!({}, { context: {} } as any);
+  if (!dateTool?.execute) throw new Error("getCurrentDate ツールが見つかりません");
+  const dateResult = await dateTool.execute({}, { context: {} } as any);
   console.log("  結果:", JSON.stringify(dateResult, null, 2));
   console.log("");
 
   // search-topic を呼び出し
   console.log("--- searchTopic を実行 ---");
   const searchTool = tools["blogResearch_searchTopic"];
-  const searchResult = await searchTool!.execute!({ query: "TypeScript" }, { context: {} } as any);
+  if (!searchTool?.execute) throw new Error("searchTopic ツールが見つかりません");
+  const searchResult = await searchTool.execute({ query: "TypeScript" }, { context: {} } as any);
   console.log("  結果:", JSON.stringify(searchResult, null, 2));
   console.log("");
 
