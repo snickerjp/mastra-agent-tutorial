@@ -2,17 +2,9 @@
  * Chapter 4: メモリで反復改善する
  *
  * 【このChapterで体験すること】
- * 1. メモリなしエージェント vs メモリありエージェントの違い
- *    - メモリなし: 「書き直して」と言っても、前の文脈がなく一から生成される
- *    - メモリあり: 前の記事を覚えており、修正指示を的確に適用できる
- *
- * 2. thread と resource の概念
- *    - thread  : 会話セッションの識別子（「この記事作業」という単位）
- *    - resource: ユーザー/エンティティの識別子（「誰の」という単位）
- *
- * 3. メモリがあることでエージェントへの指示が「差分指定」で済む
- *    - ❌ 「TypeScriptの記事を対象読者を初心者にして全体的に書き直して」
- *    - ✅ 「もっと初心者向けに書き直して」（前の記事を覚えているから短くてよい）
+ * 1. メモリなし: 「2番目に決めた」→ 何の2番目？が分からない
+ * 2. メモリあり: 前の会話を覚えているので「2番目」が通じる
+ * 3. thread と resource で会話セッションを管理する
  *
  * 実行コマンド:
  *   npm run ch4
@@ -21,57 +13,51 @@
 import "dotenv/config";
 
 import { Agent } from "@mastra/core/agent";
-import { Mastra } from "@mastra/core";
 import { Memory } from "@mastra/memory";
 import { LibSQLStore } from "@mastra/libsql";
 import { getModel } from "../config/models.js";
 
-// -----------------------------------------------------------------------
+const INSTRUCTIONS = `
+あなたはプロの技術ブログライターです。
+簡潔に回答してください。箇条書きを活用してください。
+`.trim();
+
 // メモリなしエージェント
-// -----------------------------------------------------------------------
 const agentWithoutMemory = new Agent({
-  id: "no-memory-blog-agent",
-  name: "no-memory-blog-agent",
-  instructions: `
-あなたはプロの技術ブログライターです。
-Markdown形式で、導入→本文→まとめ の構成で記事を書いてください。
-コード例を含めてください。
-  `.trim(),
+  id: "no-memory-agent",
+  name: "no-memory-agent",
+  instructions: INSTRUCTIONS,
   model: getModel(),
 });
 
-// -----------------------------------------------------------------------
 // メモリありエージェント
-// Mastra インスタンスに登録することで storage が自動的に注入される
-// -----------------------------------------------------------------------
-const agentWithMemory = new Agent({
-  id: "memory-blog-agent",
-  name: "memory-blog-agent",
-  instructions: `
-あなたはプロの技術ブログライターです。
-Markdown形式で、導入→本文→まとめ の構成で記事を書いてください。
-コード例を含めてください。
-修正を依頼された場合は、前の記事の内容を踏まえて改善してください。
-  `.trim(),
-  model: getModel(),
-  memory: new Memory({
-    options: {
-      lastMessages: 10,
-    },
-  }),
-});
+const storage = new LibSQLStore({ id: "tutorial-storage", url: ":memory:" });
+const memory = new Memory({ storage, options: { lastMessages: 10 } });
 
-// インメモリDBを使うため、ファイルや外部DBは不要
-const mastra = new Mastra({
-  agents: { agentWithMemory },
-  storage: new LibSQLStore({
-    id: "tutorial-storage",
-    url: ":memory:",
-  }),
+const agentWithMemory = new Agent({
+  id: "memory-agent",
+  name: "memory-agent",
+  instructions: INSTRUCTIONS,
+  model: getModel(),
+  memory,
 });
 
 const THREAD_ID = "article-session-001";
 const RESOURCE_ID = "user-001";
+
+// 3ターンの会話（各ターンが前のターンに依存する）
+const MESSAGES = [
+  "TypeScriptの型システムについてブログ記事を書きたい。タイトル候補を3つ提案して。",
+  "2番目のタイトルに決めた。そのタイトルで記事の構成案（章立て）を5つ出して。",
+  "第2章をもっと詳しくして。具体的なコード例も含めて。",
+];
+
+async function showThreadStatus() {
+  const thread = await memory.getThreadById({ threadId: THREAD_ID });
+  if (!thread) return;
+  const { messages } = await memory.recall({ threadId: THREAD_ID });
+  console.log(`  💾 スレッド内メッセージ数: ${messages.length}`);
+}
 
 async function main() {
   console.log("=".repeat(60));
@@ -79,90 +65,62 @@ async function main() {
   console.log("=".repeat(60));
 
   // ====================================================================
-  // PART 1: メモリなしの問題を体験する
+  // PART 1: メモリなし
   // ====================================================================
   console.log("\n" + "━".repeat(60));
-  console.log("PART 1: メモリなし — 修正指示が「無視」される");
+  console.log("PART 1: メモリなし");
   console.log("━".repeat(60));
 
-  console.log("\n[1回目] 初稿を生成...");
-  const noMemResult1 = await agentWithoutMemory.generate([
-    {
-      role: "user",
-      content: "TypeScriptの型システムについての入門記事を書いてください。対象読者はJavaScript経験者です。",
-    },
-  ]);
-  console.log("\n【初稿（先頭300字）】");
-  console.log(noMemResult1.text.slice(0, 300) + "...");
-
-  console.log("\n[2回目] 修正指示を出す（前の文脈を渡さずに）...");
-  const noMemResult2 = await agentWithoutMemory.generate([
-    { role: "user", content: "もっと初心者向けに書き直して、専門用語を減らしてください。" },
-  ]);
-  console.log("\n【修正後（先頭300字）】");
-  console.log(noMemResult2.text.slice(0, 300) + "...");
-
-  console.log("\n⚠️  【問題点】");
-  console.log("  修正指示が「何の記事に対する指示か」をエージェントが知らない。");
-  console.log("  そのため、前の記事とは無関係な新しい記事が生成される。");
+  const noMemResults: string[] = [];
+  for (let i = 0; i < MESSAGES.length; i++) {
+    console.log(`\n[${i + 1}回目] ${MESSAGES[i]}`);
+    const result = await agentWithoutMemory.generate([
+      { role: "user", content: MESSAGES[i] },
+    ]);
+    noMemResults.push(result.text);
+    console.log(`\n${result.text}`);
+    if (i > 0) {
+      console.log(`\n  ⚠️  「${i === 1 ? "2番目" : "第2章"}」が何を指すか分からず、的外れな回答になっていないか確認`);
+    }
+  }
 
   // ====================================================================
-  // PART 2: メモリありで同じことをやる
+  // PART 2: メモリあり
   // ====================================================================
   console.log("\n" + "━".repeat(60));
-  console.log("PART 2: メモリあり — 文脈を保持した反復改善");
+  console.log("PART 2: メモリあり（同じ thread で会話）");
   console.log("━".repeat(60));
 
-  const memoryOptions = {
-    memory: { thread: THREAD_ID, resource: RESOURCE_ID },
-  };
-
-  console.log("\n[1回目] 初稿を生成（thread: article-session-001）...");
-  const memResult1 = await agentWithMemory.generate(
-    "TypeScriptの型システムについての入門記事を書いてください。対象読者はJavaScript経験者です。",
-    memoryOptions
-  );
-  console.log("\n【初稿（先頭300字）】");
-  console.log(memResult1.text.slice(0, 300) + "...");
-
-  console.log("\n[2回目] 修正指示（同じthread IDで送信）...");
-  const memResult2 = await agentWithMemory.generate(
-    "もっと初心者向けに書き直して、専門用語を減らしてください。",
-    memoryOptions
-  );
-  console.log("\n【修正後（先頭300字）】");
-  console.log(memResult2.text.slice(0, 300) + "...");
-
-  console.log("\n[3回目] さらに追加修正...");
-  const memResult3 = await agentWithMemory.generate(
-    "コード例をもう1つ追加して、anyの使いすぎに注意する話も入れてください。",
-    memoryOptions
-  );
-  console.log("\n【最終稿（先頭300字）】");
-  console.log(memResult3.text.slice(0, 300) + "...");
+  const memOptions = { memory: { thread: THREAD_ID, resource: RESOURCE_ID } };
+  const memResults: string[] = [];
+  for (let i = 0; i < MESSAGES.length; i++) {
+    console.log(`\n[${i + 1}回目] ${MESSAGES[i]}`);
+    const result = await agentWithMemory.generate(MESSAGES[i], memOptions);
+    memResults.push(result.text);
+    console.log(`\n${result.text}`);
+    await showThreadStatus();
+  }
 
   // ====================================================================
-  // まとめ
+  // 比較
   // ====================================================================
   console.log("\n" + "=".repeat(60));
-  console.log("【観察ポイント】");
+  console.log("【比較サマリー】");
   console.log("=".repeat(60));
+
   console.log(`
-1. PART 1 の2回目の生成は、前の記事とは全く別の内容になっているか？
-   → メモリなしでは「もっと初心者向けに」という指示が何に対してなのか不明。
+📌 2回目の質問: 「2番目のタイトルに決めた。構成案を出して。」
 
-2. PART 2 の2回目・3回目は、前の記事を踏まえた改善になっているか？
-   → thread IDが同じ = 同一会話として記憶されているため、差分指定が機能する。
+  メモリなし → 「2番目」が何か不明。1回目のタイトル候補を知らない。
+  メモリあり → 1回目で提案した3つのタイトルを覚えており、2番目を選べる。
 
-3. thread と resource の役割:
-   - thread  = 「この記事作業」というセッション単位
-   - resource = 「誰のセッションか」というユーザー単位
-   → 複数ユーザーが同じシステムを使う場合も resource で分離できる。
+📌 3回目の質問: 「第2章をもっと詳しくして。」
 
-【Chapter 2・3 との繋がり】
-- Chapter 2 のワークフローはステートレス（毎回フルで実行）
-- Chapter 4 のメモリはステートフル（会話履歴を保持）
-- 用途が異なる: ワークフロー = バッチ型の品質向上、メモリ = 対話型の反復改善
+  メモリなし → 「第2章」が何か不明。構成案を知らない。
+  メモリあり → 2回目で出した構成案の第2章を覚えており、詳細化できる。
+
+💡 メモリにより「差分指定」（前の文脈を前提とした短い指示）が可能になる。
+   これは人間同士の会話と同じ — 毎回全部説明し直す必要がない。
 `);
 }
 

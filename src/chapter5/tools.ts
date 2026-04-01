@@ -55,7 +55,7 @@ export const searchTopic = createTool({
   }),
   execute: async ({ query }) => {
     // モックデータ（実際は外部APIを呼ぶ）
-    console.log(`  🔍 検索中: "${query}"`);
+    console.log(`  🔍 [Mock] 検索中: "${query}"`);
     const mockDB: Record<string, { title: string; snippet: string; source: string }[]> = {
       TypeScript: [
         {
@@ -89,5 +89,90 @@ export const searchTopic = createTool({
             },
           ],
     };
+  },
+});
+
+/**
+ * DuckDuckGo Instant Answers API を使った実検索ツール（API キー不要）
+ */
+export const searchTopicLive = createTool({
+  id: "search-topic-live",
+  description:
+    "DuckDuckGo API でトピックに関する情報を検索する。記事を書く前のリサーチに使う。",
+  inputSchema: z.object({
+    query: z.string().describe("検索クエリ（英語推奨）"),
+  }),
+  outputSchema: z.object({
+    results: z.array(
+      z.object({
+        title: z.string(),
+        snippet: z.string(),
+        source: z.string(),
+      })
+    ),
+  }),
+  execute: async ({ query }) => {
+    console.log(`  🌐 [Live] 検索中: "${query}"`);
+    try {
+      const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      let res: Response;
+      try {
+        res = await fetch(url, { signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as {
+        Heading?: string;
+        AbstractText?: string;
+        AbstractSource?: string;
+        RelatedTopics?: Array<
+          | { Text?: string; FirstURL?: string }
+          | { Name?: string; Topics?: Array<{ Text?: string; FirstURL?: string }> }
+        >;
+      };
+
+      const results: { title: string; snippet: string; source: string }[] = [];
+
+      if (data.AbstractText) {
+        results.push({
+          title: data.Heading ?? query,
+          snippet: data.AbstractText,
+          source: data.AbstractSource ?? "",
+        });
+      }
+
+      // グループ要素（{ Name, Topics }）を展開してからフィルタ
+      const flatTopics = (data.RelatedTopics ?? []).flatMap((t) =>
+        "Topics" in t && t.Topics ? t.Topics : [t as { Text?: string; FirstURL?: string }]
+      );
+      for (const topic of flatTopics.filter((t) => t.Text).slice(0, 3)) {
+        results.push({
+          title: topic.Text!.slice(0, 80),
+          snippet: topic.Text!,
+          source: topic.FirstURL ?? "",
+        });
+      }
+
+      if (results.length === 0) {
+        results.push({
+          title: query,
+          snippet: `「${query}」の Instant Answer は見つかりませんでした。`,
+          source: `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
+        });
+      }
+
+      return { results };
+    } catch (e) {
+      return {
+        results: [{
+          title: query,
+          snippet: `検索に失敗しました: ${e instanceof Error ? e.message : String(e)}`,
+          source: "",
+        }],
+      };
+    }
   },
 });

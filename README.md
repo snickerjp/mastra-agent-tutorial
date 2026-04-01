@@ -129,18 +129,18 @@ npm run ch4:bedrock
 ```
 
 **何を体験するか**
-- メモリなし: 「もっと初心者向けに書き直して」 → 前の記事を忘れて一から生成
-- メモリあり: 同じ `thread` で送ると前の記事を覚えていて、差分だけで修正できる
+- メモリなし: 「2番目のタイトルに決めた」 → 何の2番目か分からず的外れな回答
+- メモリあり: 同じ `thread` で送ると前の提案を覚えていて、「2番目」が通じる
 
 ```typescript
-// thread と resource で会話を識別
-await agent.generate("初稿を書いて", {
-  memory: { thread: "article-session-1", resource: "user-1" }
+// memory: { thread, resource } で会話を識別
+await agent.generate("TypeScriptの型システムについてブログ記事を書きたい。タイトル候補を3つ提案して。", {
+  memory: { thread: "session-1", resource: "user-1" }
 });
 
-// 同じ thread なので前の記事を覚えている
-await agent.generate("もっと初心者向けに書き直して", {
-  memory: { thread: "article-session-1", resource: "user-1" }
+// 同じ thread → 前の提案を覚えている
+await agent.generate("2番目のタイトルに決めた。そのタイトルで記事の構成案（章立て）を5つ出して。", {
+  memory: { thread: "session-1", resource: "user-1" }
 });
 ```
 

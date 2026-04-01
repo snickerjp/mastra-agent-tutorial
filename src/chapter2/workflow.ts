@@ -22,7 +22,7 @@ export const blogWorkflow = createWorkflow({
     audience: z
       .string()
       .describe(
-        "対象読者（例: TypeScript初心者、React経験者で状態管理を学びたいエンジニア）"
+        "対象読者（例: JavaScript経験者でTypeScriptは初めてのエンジニア）"
       ),
   }),
   outputSchema: reviewSchema,
