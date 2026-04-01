@@ -55,7 +55,7 @@ export const searchTopic = createTool({
   }),
   execute: async ({ query }) => {
     // モックデータ（実際は外部APIを呼ぶ）
-    console.log(`  🔍 検索中: "${query}"`);
+    console.log(`  🔍 [Mock] 検索中: "${query}"`);
     const mockDB: Record<string, { title: string; snippet: string; source: string }[]> = {
       TypeScript: [
         {
@@ -89,5 +89,77 @@ export const searchTopic = createTool({
             },
           ],
     };
+  },
+});
+
+/**
+ * DuckDuckGo Instant Answers API を使った実検索ツール（API キー不要）
+ */
+export const searchTopicLive = createTool({
+  id: "search-topic-live",
+  description:
+    "DuckDuckGo API でトピックに関する情報を検索する。記事を書く前のリサーチに使う。",
+  inputSchema: z.object({
+    query: z.string().describe("検索クエリ（英語推奨）"),
+  }),
+  outputSchema: z.object({
+    results: z.array(
+      z.object({
+        title: z.string(),
+        snippet: z.string(),
+        source: z.string(),
+      })
+    ),
+  }),
+  execute: async ({ query }) => {
+    console.log(`  🌐 [Live] 検索中: "${query}"`);
+    try {
+      const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1`;
+      const res = await fetch(url);
+      const data = (await res.json()) as {
+        Heading?: string;
+        AbstractText?: string;
+        AbstractSource?: string;
+        RelatedTopics?: Array<{ Text?: string; FirstURL?: string }>;
+      };
+
+      const results: { title: string; snippet: string; source: string }[] = [];
+
+      if (data.AbstractText) {
+        results.push({
+          title: data.Heading ?? query,
+          snippet: data.AbstractText,
+          source: data.AbstractSource ?? "",
+        });
+      }
+
+      for (const topic of (data.RelatedTopics ?? []).slice(0, 3)) {
+        if (topic.Text) {
+          results.push({
+            title: topic.Text.slice(0, 80),
+            snippet: topic.Text,
+            source: topic.FirstURL ?? "",
+          });
+        }
+      }
+
+      if (results.length === 0) {
+        results.push({
+          title: query,
+          snippet: `「${query}」の Instant Answer は見つかりませんでした。`,
+          source: `https://duckduckgo.com/?q=${encodeURIComponent(query)}`,
+        });
+      }
+
+      return { results };
+    } catch (e) {
+      return {
+        results: [{
+          title: query,
+          snippet: `検索に失敗しました: ${e instanceof Error ? e.message : String(e)}`,
+          source: "",
+        }],
+      };
+    }
   },
 });
