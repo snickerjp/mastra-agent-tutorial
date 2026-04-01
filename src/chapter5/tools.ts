@@ -115,13 +115,23 @@ export const searchTopicLive = createTool({
     console.log(`  🌐 [Live] 検索中: "${query}"`);
     try {
       const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1`;
-      const res = await fetch(url);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      let res: Response;
+      try {
+        res = await fetch(url, { signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as {
         Heading?: string;
         AbstractText?: string;
         AbstractSource?: string;
-        RelatedTopics?: Array<{ Text?: string; FirstURL?: string }>;
+        RelatedTopics?: Array<
+          | { Text?: string; FirstURL?: string }
+          | { Name?: string; Topics?: Array<{ Text?: string; FirstURL?: string }> }
+        >;
       };
 
       const results: { title: string; snippet: string; source: string }[] = [];
@@ -134,7 +144,11 @@ export const searchTopicLive = createTool({
         });
       }
 
-      for (const topic of (data.RelatedTopics ?? []).filter((t) => t.Text).slice(0, 3)) {
+      // グループ要素（{ Name, Topics }）を展開してからフィルタ
+      const flatTopics = (data.RelatedTopics ?? []).flatMap((t) =>
+        "Topics" in t && t.Topics ? t.Topics : [t as { Text?: string; FirstURL?: string }]
+      );
+      for (const topic of flatTopics.filter((t) => t.Text).slice(0, 3)) {
         results.push({
           title: topic.Text!.slice(0, 80),
           snippet: topic.Text!,
