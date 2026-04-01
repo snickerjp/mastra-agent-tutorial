@@ -1,8 +1,11 @@
 import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 import { fromNodeProviderChain } from "@aws-sdk/credential-providers";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createVertex } from "@ai-sdk/google-vertex";
 
 export const getModel = () => {
   const provider = process.env.AI_PROVIDER || "openai";
+
   if (provider === "bedrock") {
     const bedrock = createAmazonBedrock({
       region: process.env.AWS_REGION || "us-east-1",
@@ -10,5 +13,23 @@ export const getModel = () => {
     });
     return bedrock("amazon.nova-lite-v1:0");
   }
+
+  if (provider === "gemini") {
+    const google = createGoogleGenerativeAI();
+    return google("gemini-3.1-flash-lite-preview");
+  }
+
+  if (provider === "vertex") {
+    const project = process.env.GOOGLE_CLOUD_PROJECT;
+    if (!project) {
+      throw new Error("Vertex AI には GOOGLE_CLOUD_PROJECT の設定が必要です");
+    }
+    const vertex = createVertex({
+      project,
+      location: process.env.GOOGLE_CLOUD_LOCATION || "global",
+    });
+    return vertex("gemini-3.1-flash-lite-preview");
+  }
+
   return "openai/gpt-4o-mini" as const;
 };

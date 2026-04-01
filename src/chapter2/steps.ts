@@ -22,6 +22,7 @@ function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
 }
 
 // Bedrock (Nova) は response_format 未対応のため jsonPromptInjection が必要
+// OpenAI / Gemini / Vertex は native structured output 対応なので不要
 const isBedrock = (process.env.AI_PROVIDER || "openai") === "bedrock";
 function structured<S extends z.ZodTypeAny>(schema: S) {
   return { structuredOutput: { schema, ...(isBedrock && { jsonPromptInjection: true }) } };
