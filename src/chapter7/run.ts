@@ -40,7 +40,7 @@ try {
   console.log("--- getCurrentDate を実行 ---");
   const dateTool = tools["blogResearch_getCurrentDate"];
   if (!dateTool?.execute) throw new Error("getCurrentDate ツールが見つかりません");
-  const dateResult = await dateTool.execute({}, { context: {} } as any);
+  const dateResult = await dateTool.execute({}, {} as any);
   console.log("  結果:", JSON.stringify(dateResult, null, 2));
   console.log("");
 
@@ -48,7 +48,7 @@ try {
   console.log("--- searchTopic を実行 ---");
   const searchTool = tools["blogResearch_searchTopic"];
   if (!searchTool?.execute) throw new Error("searchTopic ツールが見つかりません");
-  const searchResult = await searchTool.execute({ query: "TypeScript" }, { context: {} } as any);
+  const searchResult = await searchTool.execute({ query: "TypeScript" }, {} as any);
   console.log("  結果:", JSON.stringify(searchResult, null, 2));
   console.log("");
 
