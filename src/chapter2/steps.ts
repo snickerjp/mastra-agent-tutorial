@@ -9,10 +9,22 @@ import { getModel } from "../config/models.js";
 const TIMEOUT_MS = 60_000;
 
 function withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
-  const timeout = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error(`⏰ ${label} が ${TIMEOUT_MS / 1000}秒以内に応答しませんでした`)), TIMEOUT_MS)
-  );
-  return Promise.race([promise, timeout]);
+  return new Promise<T>((resolve, reject) => {
+    const timeoutId = setTimeout(
+      () => reject(new Error(`⏰ ${label} が ${TIMEOUT_MS / 1000}秒以内に応答しませんでした`)),
+      TIMEOUT_MS,
+    );
+    promise.then(
+      (v) => { clearTimeout(timeoutId); resolve(v); },
+      (e) => { clearTimeout(timeoutId); reject(e); },
+    );
+  });
+}
+
+// Bedrock (Nova) は response_format 未対応のため jsonPromptInjection が必要
+const isBedrock = (process.env.AI_PROVIDER || "openai") === "bedrock";
+function structured<S extends z.ZodTypeAny>(schema: S) {
+  return { structuredOutput: { schema, ...(isBedrock && { jsonPromptInjection: true }) } };
 }
 
 // -----------------------------------------------------------------------
@@ -111,7 +123,7 @@ export const researchStep = createStep({
     const result = await withTimeout(
       researchAgent.generate(
         [{ role: "user", content: `トピック: ${inputData.topic}\n想定読者: ${inputData.audience}\n\nこのトピックの技術記事に必要なリサーチを行ってください。` }],
-        { structuredOutput: { schema: researchSchema } },
+        structured(researchSchema),
       ),
       "research",
     );
@@ -133,7 +145,7 @@ export const outlineStep = createStep({
     const result = await withTimeout(
       outlineAgent.generate(
         [{ role: "user", content: `核心ポイント: ${inputData.keyPoints.join(", ")}\n対象読者: ${inputData.targetAudience}\nトーン: ${inputData.tone}\n\n記事の目次を設計してください。` }],
-        { structuredOutput: { schema: outlineSchema } },
+        structured(outlineSchema),
       ),
       "outline",
     );
@@ -182,7 +194,7 @@ export const reviewStep = createStep({
     const result = await withTimeout(
       reviewAgent.generate(
         [{ role: "user", content: `対象読者: ${inputData.targetAudience}\n\n以下の記事原稿をレビューし改善してください:\n\n---\n${inputData.draft}\n---` }],
-        { structuredOutput: { schema: reviewSchema } },
+        structured(reviewSchema),
       ),
       "review",
     );
