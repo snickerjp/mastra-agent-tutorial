@@ -49,6 +49,7 @@ async function main() {
   console.log("\n📌 出力が型付きオブジェクトとして返ってくることを確認してください\n");
 
   // Bedrock (Nova) は response_format をサポートしないため jsonPromptInjection が必要
+  // OpenAI / Gemini / Vertex は native structured output 対応なので不要
   const isBedrock = (process.env.AI_PROVIDER || "openai") === "bedrock";
 
   const result = await blogAgent.generate(
