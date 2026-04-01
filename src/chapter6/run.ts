@@ -30,8 +30,6 @@ const BlogArticleSchema = z.object({
   targetAudience: z.string().describe("想定読者"),
 });
 
-type BlogArticle = z.infer<typeof BlogArticleSchema>;
-
 const blogAgent = new Agent({
   id: "structured-blog-agent",
   name: "structured-blog-agent",
@@ -98,7 +96,7 @@ async function main() {
 3. JSON.stringify で正しくシリアライズできるか？
 
 → 構造化出力により、エージェントの出力を後続処理（DB保存、API返却等）に使えます。
-  Chapter 7 では、複数エージェントを協調させる Supervisor パターンを学びます。
+  Chapter 7 では、自作ツールを MCP サーバーとして外部クライアントに公開する方法を学びます。
 `);
 }
 
