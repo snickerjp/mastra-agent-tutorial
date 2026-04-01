@@ -20,8 +20,12 @@ export const getModel = () => {
   }
 
   if (provider === "vertex") {
+    const project = process.env.GOOGLE_CLOUD_PROJECT;
+    if (!project) {
+      throw new Error("Vertex AI には GOOGLE_CLOUD_PROJECT の設定が必要です");
+    }
     const vertex = createVertex({
-      project: process.env.GOOGLE_CLOUD_PROJECT,
+      project,
       location: process.env.GOOGLE_CLOUD_LOCATION || "global",
     });
     return vertex("gemini-3.1-flash-lite-preview");
