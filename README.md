@@ -134,12 +134,12 @@ npm run ch4:bedrock
 
 ```typescript
 // memory: { thread, resource } で会話を識別
-await agent.generate("タイトル候補を3つ提案して", {
+await agent.generate("TypeScriptの型システムについてブログ記事を書きたい。タイトル候補を3つ提案して。", {
   memory: { thread: "session-1", resource: "user-1" }
 });
 
 // 同じ thread → 前の提案を覚えている
-await agent.generate("2番目に決めた。構成案を出して", {
+await agent.generate("2番目のタイトルに決めた。そのタイトルで記事の構成案（章立て）を5つ出して。", {
   memory: { thread: "session-1", resource: "user-1" }
 });
 ```
