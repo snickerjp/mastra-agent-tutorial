@@ -150,6 +150,7 @@ export const outlineStep = createStep({
       "outline",
     );
     const parsed = outlineSchema.parse(result.object);
+    // LLM 出力にはない targetAudience/tone を再付与（後続の write/review ステップに渡すため）
     return { ...parsed, targetAudience: inputData.targetAudience, tone: inputData.tone };
   },
 });
